@@ -50,11 +50,22 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh """
-                helm upgrade --install flask-demo . \
-                  --set image.repository=${IMAGE_NAME} \
-                  --set image.tag=${IMAGE_TAG}
-                """
+                withCredentials([
+                    file(
+                        credentialsId: 'rancher-kubeconfig',
+                        variable: 'KUBECONFIG_FILE'
+                    )
+                ]) {
+                    sh """
+                    export KUBECONFIG=\$KUBECONFIG_FILE
+
+                    kubectl get nodes
+
+                    helm upgrade --install flask-demo . \
+                      --set image.repository=${IMAGE_NAME} \
+                      --set image.tag=${IMAGE_TAG}
+                    """
+                }
             }
         }
     }
