@@ -3,15 +3,26 @@ pipeline {
 
     stages {
 
-        stage('Docker Check') {
-            steps {
-                sh 'docker --version'
-            }
-        }
-
         stage('Build Image') {
             steps {
                 sh 'docker build -t registry.odc.sunline.cn/demo/flask-demo:v2 .'
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'odc-registry',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login registry.odc.sunline.cn \
+                    -u "$DOCKER_USER" --password-stdin
+                    '''
+                }
             }
         }
 
