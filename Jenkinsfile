@@ -1,22 +1,34 @@
 pipeline {
+
     agent any
 
+    options {
+        timestamps()
+    }
+
     environment {
-        IMAGE_NAME = "registry.odc.sunline.cn/demo/flask-demo"
-        IMAGE_TAG  = "${BUILD_NUMBER}"
+        REGISTRY         = "registry.odc.sunline.cn"
+        IMAGE_REPOSITORY = "${REGISTRY}/demo/flask-demo"
+        IMAGE_TAG        = "${BUILD_NUMBER}"
+
+        NAMESPACE        = "justine-sandbox"
+        RELEASE_NAME     = "flask-demo"
     }
 
     stages {
 
-        stage('Build Image') {
+        stage('Build Docker Image') {
             steps {
+                echo "Building Docker image ${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+
                 sh """
-                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    docker build \
+                    -t ${IMAGE_REPOSITORY}:${IMAGE_TAG} .
                 """
             }
         }
 
-        stage('Docker Login') {
+        stage('Login to Registry') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -25,31 +37,38 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )
                 ]) {
+
                     sh '''
-                    echo "$DOCKER_PASS" | docker login registry.odc.sunline.cn \
-                    -u "$DOCKER_USER" --password-stdin
+                        echo "$DOCKER_PASS" | \
+                        docker login registry.odc.sunline.cn \
+                        -u "$DOCKER_USER" \
+                        --password-stdin
                     '''
                 }
             }
         }
 
-        stage('Push Image') {
+        stage('Push Docker Image') {
             steps {
+                echo "Pushing image to Harbor registry"
+
                 sh """
-                docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                    docker push ${IMAGE_REPOSITORY}:${IMAGE_TAG}
                 """
             }
         }
 
-        stage('Tools Check') {
+        stage('Verify Build Environment') {
             steps {
-                sh 'docker --version'
-                sh 'helm version'
-                sh 'kubectl version --client'
+                sh '''
+                    docker --version
+                    helm version
+                    kubectl version --client
+                '''
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Rancher Kubernetes') {
             steps {
                 withCredentials([
                     file(
@@ -57,13 +76,16 @@ pipeline {
                         variable: 'KUBECONFIG_FILE'
                     )
                 ]) {
-                    sh """
-                    export KUBECONFIG=\$KUBECONFIG_FILE
 
-                    helm upgrade --install flask-demo . \
-                      --namespace justine-sandbox \
-                      --set image.repository=${IMAGE_NAME} \
-                      --set image.tag=${IMAGE_TAG}
+                    sh """
+                        export KUBECONFIG=\$KUBECONFIG_FILE
+
+                        helm upgrade --install ${RELEASE_NAME} . \
+                          --namespace ${NAMESPACE} \
+                          --set image.repository=${IMAGE_REPOSITORY} \
+                          --set image.tag=${IMAGE_TAG} \
+                          --wait \
+                          --timeout 5m
                     """
                 }
             }
@@ -77,12 +99,23 @@ pipeline {
                         variable: 'KUBECONFIG_FILE'
                     )
                 ]) {
-                    sh """
-                    export KUBECONFIG=\$KUBECONFIG_FILE
 
-                    kubectl get pods -n justine-sandbox
-                    kubectl get deployments -n justine-sandbox
-                    kubectl get services -n justine-sandbox
+                    sh """
+                        export KUBECONFIG=\$KUBECONFIG_FILE
+
+                        echo "===== Pods ====="
+                        kubectl get pods -n ${NAMESPACE}
+
+                        echo "===== Deployments ====="
+                        kubectl get deployments -n ${NAMESPACE}
+
+                        echo "===== Services ====="
+                        kubectl get services -n ${NAMESPACE}
+
+                        echo "===== Rollout Status ====="
+                        kubectl rollout status deployment/${RELEASE_NAME} \
+                          -n ${NAMESPACE} \
+                          --timeout=300s
                     """
                 }
             }
@@ -90,12 +123,37 @@ pipeline {
     }
 
     post {
+
         success {
-            echo 'Deployment completed successfully!'
+            echo """
+==================================================
+ Deployment Successful
+==================================================
+Image:
+${IMAGE_REPOSITORY}:${IMAGE_TAG}
+
+Namespace:
+${NAMESPACE}
+
+Release:
+${RELEASE_NAME}
+==================================================
+"""
         }
 
         failure {
-            echo 'Pipeline failed!'
+            echo """
+==================================================
+ Deployment Failed
+Check Jenkins console logs for details.
+==================================================
+"""
+        }
+
+        always {
+            sh '''
+                docker image prune -f || true
+            '''
         }
     }
 }
