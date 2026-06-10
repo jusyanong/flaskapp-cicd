@@ -61,8 +61,7 @@ pipeline {
                     export KUBECONFIG=\$KUBECONFIG_FILE
 
                     helm upgrade --install flask-demo . \
-                      --namespace practice \
-                      --create-namespace \
+                      --namespace justine-sandbox \
                       --set image.repository=${IMAGE_NAME} \
                       --set image.tag=${IMAGE_TAG}
                     """
