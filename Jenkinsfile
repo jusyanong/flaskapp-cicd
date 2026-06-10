@@ -59,8 +59,6 @@ pipeline {
                     sh """
                     export KUBECONFIG=\$KUBECONFIG_FILE
 
-                    kubectl get nodes
-
                     helm upgrade --install flask-demo . \
                       --set image.repository=${IMAGE_NAME} \
                       --set image.tag=${IMAGE_TAG}
