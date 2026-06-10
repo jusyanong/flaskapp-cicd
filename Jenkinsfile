@@ -2,10 +2,6 @@ pipeline {
 
     agent any
 
-    options {
-        timestamps()
-    }
-
     environment {
         REGISTRY         = "registry.odc.sunline.cn"
         IMAGE_REPOSITORY = "${REGISTRY}/demo/flask-demo"
