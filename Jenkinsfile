@@ -1,7 +1,7 @@
 pipeline {
 agent any
 
-```
+
 environment {
     IMAGE_NAME = "registry.odc.sunline.cn/demo/flask-demo"
     IMAGE_TAG = "${BUILD_NUMBER}"
@@ -58,6 +58,6 @@ stages {
         }
     }
 }
-```
+
 
 }
