@@ -11,13 +11,13 @@ pipeline {
 
         stage('Build Image') {
             steps {
-                sh 'docker build -t flask-demo:v1 .'
+                sh 'docker build -t registry.odc.sunline.cn/demo/flask-demo:v2 .'
             }
         }
 
         stage('Push Image') {
             steps {
-                sh 'docker push registry.odc.sunline.cn/demo/flask-demo:v1'
+                sh 'docker push registry.odc.sunline.cn/demo/flask-demo:v2'
             }
         }
 
