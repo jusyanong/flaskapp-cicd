@@ -41,8 +41,9 @@ pipeline {
             }
         }
 
-        stage('Helm Check') {
+        stage('Tools Check') {
             steps {
+                sh 'docker --version'
                 sh 'helm version'
                 sh 'kubectl version --client'
             }
@@ -65,6 +66,33 @@ pipeline {
                     """
                 }
             }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'rancher-kubeconfig',
+                        variable: 'KUBECONFIG_FILE'
+                    )
+                ]) {
+                    sh """
+                    export KUBECONFIG=\$KUBECONFIG_FILE
+
+                    kubectl get pods
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment completed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
