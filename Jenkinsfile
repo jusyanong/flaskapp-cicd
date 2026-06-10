@@ -80,7 +80,9 @@ pipeline {
                     sh """
                     export KUBECONFIG=\$KUBECONFIG_FILE
 
-                    kubectl get pods
+                    kubectl get pods -n justine-sandbox
+                    kubectl get deployments -n justine-sandbox
+                    kubectl get services -n justine-sandbox
                     """
                 }
             }
