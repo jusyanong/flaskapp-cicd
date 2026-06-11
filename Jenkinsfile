@@ -64,6 +64,25 @@ pipeline {
             }
         }
 
+        stage('Debug Kubeconfig') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'rancher-kubeconfig',
+                        variable: 'KUBECONFIG_FILE'
+                    )
+                ]) {
+
+                    sh '''
+                    export KUBECONFIG=$KUBECONFIG_FILE
+
+                    kubectl config current-context
+                    kubectl get ns
+                    '''
+                }
+            }
+        }
+
         stage('Deploy to Rancher Kubernetes') {
             steps {
                 withCredentials([
