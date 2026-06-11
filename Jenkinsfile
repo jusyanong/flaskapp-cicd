@@ -8,7 +8,7 @@ pipeline {
         IMAGE_TAG        = "${BUILD_NUMBER}"
 
         NAMESPACE        = "justine-sandbox"
-        RELEASE_NAME     = "flask-demo"
+        RELEASE_NAME     = "flaskapp"
     }
 
     stages {
