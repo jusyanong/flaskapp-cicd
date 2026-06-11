@@ -2,6 +2,10 @@ pipeline {
 
     agent any
 
+    options {
+        timestamps()
+    }
+
     environment {
         REGISTRY         = "registry.odc.sunline.cn"
         IMAGE_REPOSITORY = "${REGISTRY}/demo/flask-demo"
@@ -61,25 +65,6 @@ pipeline {
                     helm version
                     kubectl version --client
                 '''
-            }
-        }
-
-        stage('Debug Kubeconfig') {
-            steps {
-                withCredentials([
-                    file(
-                        credentialsId: 'rancher-kubeconfig',
-                        variable: 'KUBECONFIG_FILE'
-                    )
-                ]) {
-
-                    sh '''
-                    export KUBECONFIG=$KUBECONFIG_FILE
-
-                    kubectl config current-context
-                    kubectl get ns
-                    '''
-                }
             }
         }
 
